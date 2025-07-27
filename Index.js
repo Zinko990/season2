@@ -2,6 +2,7 @@ const axios = require('axios');
 const ethers = require('ethers');
 const dotenv = require('dotenv');
 const readline = require('readline');
+const fs = require('fs');
 
 dotenv.config();
 
@@ -41,7 +42,7 @@ async function buildFallbackProvider(rpcUrls, chainId, name) {
   };
 }
 
-const colors = {
+const colors = colors = {
   reset: "\x1b[0m",
   cyan: "\x1b[36m",
   green: "\x1b[32m",
@@ -110,6 +111,30 @@ function loadPrivateKeys() {
     i++;
   }
   return keys;
+}
+
+function loadUsernames() {
+  try {
+    const data = fs.readFileSync('usernames.txt', 'utf8');
+    const usernames = data.split('\n').map(u => u.trim()).filter(u => u);
+    if (usernames.length === 0) {
+      logger.error('usernames.txt is empty. Please add X usernames to tip.');
+      process.exit(1);
+    }
+    logger.success(`${usernames.length} username(s) loaded from usernames.txt`);
+    return usernames;
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      logger.error('usernames.txt not found. Please create a usernames.txt file with X usernames.');
+    } else {
+      logger.error(`Error reading usernames.txt: ${error.message}`);
+    }
+    process.exit(1);
+  }
+}
+
+function getRandomUsername(usernames) {
+  return usernames[Math.floor(Math.random() * usernames.length)];
 }
 
 async function aquaFluxLogin(wallet) {
@@ -434,6 +459,7 @@ function question(query) {
   const fallbackProvider = await buildFallbackProvider(PHAROS_RPC_URLS, PHAROS_CHAIN_ID, 'pharos');
   const provider = await fallbackProvider.getProvider();
   const privateKeys = loadPrivateKeys();
+  const usernames = loadUsernames();
 
   if (privateKeys.length === 0) {
     logger.error('No valid private keys found in .env. Please add PRIVATE_KEY_1, PRIVATE_KEY_2, etc.');
@@ -445,7 +471,6 @@ function question(query) {
   const aquaFluxMintStr = await question(`${colors.cyan}Enter the number of AquaFlux mints (for each wallet): ${colors.reset}`);
   const numberOfMints = parseInt(aquaFluxMintStr);
   
-  const username = await question(`${colors.cyan}Enter the X username to tip (the same user will be tipped by all wallets): ${colors.reset}`);
   const tipCountStr = await question(`${colors.cyan}Enter the number of tips to send (from each wallet): ${colors.reset}`);
   const numberOfTips = parseInt(tipCountStr);
   console.log('\n'); 
@@ -475,8 +500,9 @@ function question(query) {
             logger.warn('Invalid AquaFlux mint count, skipping mints.');
         }
 
-        if (username && !isNaN(numberOfTips) && numberOfTips > 0) {
+        if (!isNaN(numberOfTips) && numberOfTips > 0) {
             for (let i = 0; i < numberOfTips; i++) {
+                const username = getRandomUsername(usernames);
                 logger.step(`Executing Tip #${i + 1} of ${numberOfTips} to ${username}`);
                 try {
                     await sendTip(wallet, username);
@@ -490,7 +516,7 @@ function question(query) {
             }
             logger.success('Send tip operations completed for this wallet!');
         } else if (index === 0) {
-            logger.warn('Invalid username or tip count, skipping tips.');
+            logger.warn('Invalid tip count, skipping tips.');
         }
 
         logger.success(`All tasks finished for wallet ${wallet.address}\n`);
