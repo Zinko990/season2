@@ -20,6 +20,18 @@ const AQUAFLUX_NFT_ABI = [
     "function mint(uint256 nftType, uint256 expiresAt, bytes signature)"
 ];
 
+const colors = {
+  reset: "\x1b[0m",
+  cyan: "\x1b[36m",
+  green: "\x1b[32m",
+  yellow: "\x1b[33m",
+  red: "\x1b[31m",
+  white: "\x1b[37m",
+  bold: "\x1b[1m",
+  blue: "\x1b[34m",
+  magenta: "\x1b[35m"
+};
+
 async function buildFallbackProvider(rpcUrls, chainId, name) {
   const provider = new ethers.JsonRpcProvider(rpcUrls[0], { chainId, name });
   return {
@@ -41,18 +53,6 @@ async function buildFallbackProvider(rpcUrls, chainId, name) {
     }
   };
 }
-
-const colors = colors = {
-  reset: "\x1b[0m",
-  cyan: "\x1b[36m",
-  green: "\x1b[32m",
-  yellow: "\x1b[33m",
-  red: "\x1b[31m",
-  white: "\x1b[37m",
-  bold: "\x1b[1m",
-  blue: "\x1b[34m",
-  magenta: "\x1b[35m"
-};
 
 const logger = {
   info: (msg) => console.log(`${colors.green}[✓] ${msg}${colors.reset}`),
